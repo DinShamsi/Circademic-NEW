@@ -4,175 +4,92 @@ import {
     doc, 
     getDoc, 
     setDoc, 
+    updateDoc,
     collection,
     getDocs,
     addDoc,
-    deleteDoc
+    deleteDoc,
+    query,
+    where
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 let currentUser = null;
 let userData = null;
 let courses = [];
+let editingCourseId = null; // משתנה למעקב אחר עריכה
 
-console.log('Dashboard script loading...');
+// Make Chart available globally
+window.Chart = window.Chart || {};
 
-// Wait for DOM to be ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDashboard);
-} else {
-    initDashboard();
-}
-
-function initDashboard() {
-    console.log('Initializing dashboard...');
-    
-    // Check authentication
-    onAuthStateChanged(auth, async (user) => {
-        console.log('Auth state changed:', user ? 'Logged in' : 'Not logged in');
-        if (user) {
-            currentUser = user;
-            await loadUserData();
-            await loadCourses();
-            updateDashboard();
-            setupEventListeners();
-        } else {
-            console.log('No user, redirecting to login');
-            window.location.href = 'login.html';
-        }
-    });
-}
-
-// Setup all event listeners
-function setupEventListeners() {
-    console.log('Setting up event listeners...');
-    
-    // Navigation
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-            if (item.getAttribute('href').startsWith('#')) {
-                e.preventDefault();
-                const target = item.getAttribute('href');
-                
-                // Hide all sections
-                document.querySelectorAll('.dashboard-section').forEach(s => {
-                    s.style.display = 'none';
-                });
-                
-                // Show target section
-                const section = document.querySelector(target);
-                if (section) {
-                    section.style.display = 'block';
-                }
-                
-                // Update active state
-                navItems.forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-            }
-        });
-    });
-    
-    // Add course form
-    const addCourseForm = document.getElementById('addCourseForm');
-    if (addCourseForm) {
-        addCourseForm.addEventListener('submit', handleAddCourse);
+// Check authentication
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        currentUser = user;
+        await loadUserData();
+        await loadCourses();
+        updateDashboard();
+    } else {
+        window.location.href = 'login.html';
     }
-    
-    // Close modal on outside click
-    const modal = document.getElementById('addCourseModal');
-    if (modal) {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal('addCourseModal');
-            }
-        });
-    }
-    
-    console.log('Event listeners set up successfully');
-}
+});
 
 // Load user data
 async function loadUserData() {
     try {
-        console.log('Loading user data...');
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        
         if (userDoc.exists()) {
             userData = userDoc.data();
-            console.log('User data loaded:', userData);
-            
-            // Update UI
-            const userName = userData.name || currentUser.email;
-            document.getElementById('userName').textContent = userName;
-            document.getElementById('welcomeName').textContent = userName;
+            document.getElementById('userName').textContent = userData.name;
+            document.getElementById('welcomeName').textContent = userData.name;
             
             // Set user avatar
-            const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            const initials = userData.name.split(' ').map(n => n[0]).join('').toUpperCase();
             document.getElementById('userAvatar').textContent = initials;
             
             // Populate category dropdown
             const categorySelect = document.getElementById('courseCategory');
             if (categorySelect) {
                 categorySelect.innerHTML = '';
-                const categories = userData.categories || ['חובה', 'בחירה', 'כללי', 'ספורט'];
-                categories.forEach(cat => {
+                (userData.categories || ['חובה', 'בחירה', 'כללי', 'ספורט']).forEach(cat => {
                     const option = document.createElement('option');
                     option.value = cat;
                     option.textContent = cat;
                     categorySelect.appendChild(option);
                 });
             }
-        } else {
-            console.log('User document does not exist, creating...');
-            // Create default user document
-            userData = {
-                name: currentUser.displayName || currentUser.email,
-                email: currentUser.email,
-                createdAt: new Date().toISOString(),
-                institution: '',
-                major: '',
-                totalCreditsRequired: 120,
-                targetAverage: 0,
-                categories: ['חובה', 'בחירה', 'כללי', 'ספורט'],
-                isWriter: false
-            };
-            await setDoc(doc(db, 'users', currentUser.uid), userData);
         }
     } catch (error) {
         console.error('Error loading user data:', error);
-        showMessage('שגיאה בטעינת נתוני משתמש', 'error');
     }
 }
 
 // Load courses
 async function loadCourses() {
     try {
-        console.log('Loading courses...');
         const coursesRef = collection(db, 'users', currentUser.uid, 'courses');
         const snapshot = await getDocs(coursesRef);
         courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log(`Loaded ${courses.length} courses`);
     } catch (error) {
         console.error('Error loading courses:', error);
-        showMessage('שגיאה בטעינת קורסים', 'error');
     }
 }
 
 // Update dashboard
 function updateDashboard() {
-    console.log('Updating dashboard...');
     updateStatistics();
     updateProgressBar();
     updateCharts();
     updateCategoryStats();
-    populateCoursesTable();
     populateFilters();
+    window.filterCourses(); // קריאה לסינון כדי למלא את הטבלה
 }
 
 // Calculate statistics
 function updateStatistics() {
+    // Filter numeric courses only
     const numericCourses = courses.filter(c => c.gradeType === 'רגיל' && c.grade > 0);
     
+    // Calculate weighted average
     let totalPoints = 0;
     let totalCredits = 0;
     
@@ -184,14 +101,20 @@ function updateStatistics() {
     const weightedAverage = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : '0.00';
     document.getElementById('overallAverage').textContent = weightedAverage;
     
+    // Total credits (including binary courses that passed)
+    // הערה: כאן אנו מניחים שציון 0 בקורס בינארי אומר "לא עבר" או שאין ציון
     const allCredits = courses.reduce((sum, c) => sum + c.credits, 0);
     document.getElementById('totalCredits').textContent = allCredits.toFixed(1);
     
+    // Degree progress
     const requiredCredits = userData?.totalCreditsRequired || 120;
     const progress = Math.min(100, (allCredits / requiredCredits * 100)).toFixed(1);
     document.getElementById('degreeProgress').textContent = progress + '%';
     
-    const highestGrade = numericCourses.length > 0 ? Math.max(...numericCourses.map(c => c.grade)) : 0;
+    // Highest grade
+    const highestGrade = numericCourses.length > 0 
+        ? Math.max(...numericCourses.map(c => c.grade)) 
+        : 0;
     document.getElementById('highestGrade').textContent = highestGrade;
 }
 
@@ -205,8 +128,12 @@ function updateProgressBar() {
     document.getElementById('creditsRequired').textContent = requiredCredits;
     document.getElementById('progressFill').style.width = progress + '%';
     
-    const maxSemester = courses.length > 0 ? Math.max(...courses.map(c => c.semester)) : 0;
-    const currentSemester = maxSemester + 1;
+    // Calculate current semester and year - תוקן הבאג של +1
+    const maxSemester = courses.length > 0 
+        ? Math.max(...courses.map(c => c.semester)) 
+        : 1; // אם אין קורסים, אנחנו בסמסטר 1
+        
+    const currentSemester = maxSemester;
     const currentYear = Math.ceil(currentSemester / 2);
     
     const yearNames = ['א\'', 'ב\'', 'ג\'', 'ד\'', 'ה\'', 'ו\''];
@@ -216,19 +143,21 @@ function updateProgressBar() {
 
 // Update charts
 function updateCharts() {
-    if (typeof Chart === 'undefined') {
-        console.error('Chart.js not loaded');
-        return;
-    }
-    
     updateSemesterChart();
     updateExamTypeChart();
 }
 
+// Semester trend chart
 function updateSemesterChart() {
     const ctx = document.getElementById('semesterChart');
     if (!ctx) return;
     
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js not loaded yet');
+        return;
+    }
+    
+    // Group by semester
     const semesterData = {};
     courses.forEach(course => {
         if (course.gradeType === 'רגיל' && course.grade > 0) {
@@ -241,7 +170,9 @@ function updateSemesterChart() {
     });
     
     const semesters = Object.keys(semesterData).sort((a, b) => a - b);
-    const averages = semesters.map(s => (semesterData[s].points / semesterData[s].credits).toFixed(2));
+    const averages = semesters.map(s => 
+        (semesterData[s].points / semesterData[s].credits).toFixed(2)
+    );
     
     if (window.semesterChart) window.semesterChart.destroy();
     
@@ -261,17 +192,29 @@ function updateSemesterChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: {
+                legend: { display: false }
+            },
             scales: {
-                y: { beginAtZero: false, min: 60, max: 100 }
+                y: {
+                    beginAtZero: false,
+                    min: 50, // שינוי קטן כדי לראות גרף יפה יותר
+                    max: 100
+                }
             }
         }
     });
 }
 
+// Exam type distribution chart
 function updateExamTypeChart() {
     const ctx = document.getElementById('examTypeChart');
     if (!ctx) return;
+    
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js not loaded yet');
+        return;
+    }
     
     const examTypes = {};
     courses.forEach(course => {
@@ -293,7 +236,9 @@ function updateExamTypeChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } }
+            plugins: {
+                legend: { display: false }
+            }
         }
     });
 }
@@ -331,24 +276,13 @@ function updateCategoryStats() {
     });
 }
 
-// Populate courses table
-function populateCoursesTable() {
+// Populate courses table - תוקן לקבלת נתונים מסוננים
+function populateCoursesTable(coursesData = courses) {
     const tbody = document.getElementById('coursesTableBody');
     if (!tbody) return;
     
     tbody.innerHTML = '';
-    
-    if (courses.length === 0) {
-        const row = tbody.insertRow();
-        const cell = row.insertCell();
-        cell.colSpan = 7;
-        cell.style.textAlign = 'center';
-        cell.style.padding = '2rem';
-        cell.textContent = 'אין קורסים עדיין. לחץ על "הוסף קורס" כדי להתחיל!';
-        return;
-    }
-    
-    courses.forEach(course => {
+    coursesData.forEach(course => {
         const row = tbody.insertRow();
         row.innerHTML = `
             <td>${course.name}</td>
@@ -358,7 +292,8 @@ function populateCoursesTable() {
             <td>${course.category}</td>
             <td>${course.examType}</td>
             <td>
-                <button onclick="deleteCourse('${course.id}')" class="btn-sm" style="background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;">מחק</button>
+                <button onclick="editCourse('${course.id}')" class="btn-sm btn-secondary">ערוך</button>
+                <button onclick="deleteCourse('${course.id}')" class="btn-sm" style="background: #ef4444; color: white;">מחק</button>
             </td>
         `;
     });
@@ -369,7 +304,9 @@ function populateFilters() {
     const semesterFilter = document.getElementById('filterSemester');
     const categoryFilter = document.getElementById('filterCategory');
     
-    if (semesterFilter && courses.length > 0) {
+    if (semesterFilter) {
+        // שמירת הבחירה הנוכחית
+        const currentVal = semesterFilter.value;
         const semesters = [...new Set(courses.map(c => c.semester))].sort((a, b) => a - b);
         semesterFilter.innerHTML = '<option value="">כל הסמסטרים</option>';
         semesters.forEach(s => {
@@ -378,9 +315,11 @@ function populateFilters() {
             option.textContent = `סמסטר ${s}`;
             semesterFilter.appendChild(option);
         });
+        semesterFilter.value = currentVal; // שחזור בחירה
     }
     
-    if (categoryFilter && courses.length > 0) {
+    if (categoryFilter) {
+        const currentVal = categoryFilter.value;
         const categories = [...new Set(courses.map(c => c.category))];
         categoryFilter.innerHTML = '<option value="">כל הקטגוריות</option>';
         categories.forEach(cat => {
@@ -389,62 +328,26 @@ function populateFilters() {
             option.textContent = cat;
             categoryFilter.appendChild(option);
         });
+        categoryFilter.value = currentVal;
     }
 }
 
-// Handle add course
-async function handleAddCourse(e) {
-    e.preventDefault();
-    console.log('Adding course...');
-    
-    const courseData = {
-        name: document.getElementById('courseName').value,
-        credits: parseFloat(document.getElementById('courseCredits').value),
-        grade: parseFloat(document.getElementById('courseGrade').value),
-        semester: parseInt(document.getElementById('courseSemester').value),
-        category: document.getElementById('courseCategory').value,
-        examType: document.getElementById('courseExamType').value,
-        gradeType: document.getElementById('courseGradeType').value
-    };
-    
-    console.log('Course data:', courseData);
-    
-    try {
-        await addDoc(collection(db, 'users', currentUser.uid, 'courses'), courseData);
-        console.log('Course added successfully');
-        
-        await loadCourses();
-        updateDashboard();
-        closeModal('addCourseModal');
-        e.target.reset();
-        showMessage('הקורס נוסף בהצלחה!', 'success');
-    } catch (error) {
-        console.error('Error adding course:', error);
-        showMessage('שגיאה בהוספת הקורס: ' + error.message, 'error');
-    }
-}
+// Navigation
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = item.getAttribute('href');
+        if (target.startsWith('#')) {
+            document.querySelectorAll('.dashboard-section').forEach(s => s.style.display = 'none');
+            document.querySelector(target)?.style.display = 'block';
+            
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+        }
+    });
+});
 
-// Show message
-function showMessage(message, type) {
-    const messageDiv = document.createElement('div');
-    messageDiv.textContent = message;
-    messageDiv.style.cssText = `
-        position: fixed;
-        top: 80px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 1rem 2rem;
-        border-radius: 10px;
-        font-weight: 600;
-        z-index: 10000;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        ${type === 'success' ? 'background: #10b981; color: white;' : 'background: #ef4444; color: white;'}
-    `;
-    document.body.appendChild(messageDiv);
-    setTimeout(() => messageDiv.remove(), 3000);
-}
-
-// Global functions
+// Theme toggle
 window.toggleTheme = () => {
     const html = document.documentElement;
     const currentTheme = html.getAttribute('data-theme');
@@ -453,44 +356,35 @@ window.toggleTheme = () => {
     localStorage.setItem('theme', newTheme);
     
     const icon = document.querySelector('.theme-icon');
-    if (icon) icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
 };
 
+// Load saved theme
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+const icon = document.querySelector('.theme-icon');
+if (icon) icon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+// User menu toggle
 window.toggleUserMenu = () => {
     const dropdown = document.getElementById('userDropdown');
-    if (dropdown) {
-        dropdown.classList.toggle('active');
-    }
+    dropdown.classList.toggle('active');
 };
 
+// Logout
 window.logout = async () => {
     try {
         await signOut(auth);
         window.location.href = 'index.html';
     } catch (error) {
         console.error('Error logging out:', error);
-        showMessage('שגיאה בהתנתקות', 'error');
     }
 };
 
-window.showProfile = () => {
-    showMessage('דף הפרופיל בפיתוח', 'error');
-};
-
-window.showSettings = () => {
-    showMessage('דף ההגדרות בפיתוח', 'error');
-};
-
+// Add course modal
 window.showAddCourse = () => {
-    console.log('Opening add course modal...');
     const modal = document.getElementById('addCourseModal');
-    if (modal) {
-        modal.classList.add('active');
-        modal.style.display = 'flex';
-        console.log('Modal opened');
-    } else {
-        console.error('Modal not found!');
-    }
+    modal.classList.add('active');
 };
 
 window.closeModal = (modalId) => {
@@ -498,13 +392,56 @@ window.closeModal = (modalId) => {
     if (modal) {
         modal.classList.remove('active');
         modal.style.display = 'none';
+        
+        // איפוס אם זה מודאל הוספת קורס
+        if (modalId === 'addCourseModal') {
+            document.getElementById('addCourseForm').reset();
+            editingCourseId = null;
+            document.querySelector('#addCourseModal h2').textContent = 'הוסף קורס חדש';
+            document.querySelector('#addCourseForm button[type="submit"]').textContent = 'שמור קורס';
+        }
     }
 };
 
-window.showImportCSV = () => {
-    showMessage('ייבוא CSV בפיתוח', 'error');
-};
+// Add/Edit course form handler - תוקן לתמוך בעריכה
+const addCourseForm = document.getElementById('addCourseForm');
+if (addCourseForm) {
+    addCourseForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const courseData = {
+            name: document.getElementById('courseName').value,
+            credits: parseFloat(document.getElementById('courseCredits').value),
+            grade: parseFloat(document.getElementById('courseGrade').value),
+            semester: parseInt(document.getElementById('courseSemester').value),
+            category: document.getElementById('courseCategory').value,
+            examType: document.getElementById('courseExamType').value,
+            gradeType: document.getElementById('courseGradeType').value
+        };
+        
+        try {
+            if (editingCourseId) {
+                // מצב עריכה
+                await updateDoc(doc(db, 'users', currentUser.uid, 'courses', editingCourseId), courseData);
+                showMessage('הקורס עודכן בהצלחה!', 'success');
+            } else {
+                // מצב הוספה
+                await addDoc(collection(db, 'users', currentUser.uid, 'courses'), courseData);
+                showMessage('הקורס נוסף בהצלחה!', 'success');
+            }
+            
+            await loadCourses();
+            updateDashboard();
+            closeModal('addCourseModal');
+            // Form is reset in closeModal
+        } catch (error) {
+            console.error('Error saving course:', error);
+            showMessage('שגיאה בשמירת הקורס', 'error');
+        }
+    });
+}
 
+// Export CSV
 window.exportCSV = () => {
     if (courses.length === 0) {
         showMessage('אין קורסים לייצא', 'error');
@@ -512,7 +449,15 @@ window.exportCSV = () => {
     }
     
     const headers = ['שם הקורס', 'נ"ז', 'ציון', 'סמסטר', 'קטגוריה', 'מועד', 'סוג ציון'];
-    const rows = courses.map(c => [c.name, c.credits, c.grade, c.semester, c.category, c.examType, c.gradeType]);
+    const rows = courses.map(c => [
+        c.name,
+        c.credits,
+        c.grade,
+        c.semester,
+        c.category,
+        c.examType,
+        c.gradeType
+    ]);
     
     let csv = headers.join(',') + '\n';
     rows.forEach(row => {
@@ -525,6 +470,60 @@ window.exportCSV = () => {
     link.download = 'courses.csv';
     link.click();
     showMessage('הקובץ יוצא בהצלחה!', 'success');
+};
+
+// Shield calculator
+window.calculateShield = () => {
+    const shieldGrade = parseFloat(document.getElementById('shieldGrade')?.value);
+    const shieldPercent = parseFloat(document.getElementById('shieldPercent')?.value);
+    const examGrade = document.getElementById('examGrade')?.value;
+    
+    const result = document.getElementById('shieldResult');
+    if (!result) return;
+    
+    if (!shieldGrade || !shieldPercent) {
+        result.textContent = 'אנא מלא את כל השדות';
+        result.classList.add('active');
+        return;
+    }
+    
+    if (examGrade) {
+        const examPercent = 100 - shieldPercent;
+        const finalGrade = (shieldGrade * shieldPercent / 100) + (parseFloat(examGrade) * examPercent / 100);
+        result.innerHTML = `<h4>הציון הסופי שלך: ${finalGrade.toFixed(2)}</h4>`;
+    } else {
+        const examPercent = 100 - shieldPercent;
+        const requiredGrade = ((55 - (shieldGrade * shieldPercent / 100)) * 100) / examPercent;
+        result.innerHTML = `<h4>כדי לקבל ציון עובר (55), עליך לקבל ${requiredGrade.toFixed(2)} בבחינה</h4>`;
+    }
+    
+    result.classList.add('active');
+};
+
+// Edit Course Function - פונקציה חדשה
+window.editCourse = (courseId) => {
+    const course = courses.find(c => c.id === courseId);
+    if (!course) return;
+
+    // 1. Fill form
+    document.getElementById('courseName').value = course.name;
+    document.getElementById('courseCredits').value = course.credits;
+    document.getElementById('courseGrade').value = course.grade;
+    document.getElementById('courseSemester').value = course.semester;
+    document.getElementById('courseCategory').value = course.category;
+    document.getElementById('courseExamType').value = course.examType;
+    document.getElementById('courseGradeType').value = course.gradeType;
+
+    // 2. Change UI to Edit Mode
+    const modalTitle = document.querySelector('#addCourseModal h2');
+    const submitBtn = document.querySelector('#addCourseForm button[type="submit"]');
+    
+    if(modalTitle) modalTitle.textContent = 'ערוך קורס';
+    if(submitBtn) submitBtn.textContent = 'עדכן קורס';
+
+    // 3. Set state
+    editingCourseId = courseId;
+    window.showAddCourse();
 };
 
 window.deleteCourse = async (courseId) => {
@@ -541,58 +540,74 @@ window.deleteCourse = async (courseId) => {
     }
 };
 
+// Filter & Sort Functions - מומשו מחדש
 window.filterCourses = () => {
-    populateCoursesTable();
+    const searchTerm = document.getElementById('searchCourses')?.value.toLowerCase() || '';
+    const semesterFilter = document.getElementById('filterSemester')?.value || '';
+    const categoryFilter = document.getElementById('filterCategory')?.value || '';
+    const sortBy = document.getElementById('sortBy')?.value || 'name';
+
+    // 1. Filter
+    let filtered = courses.filter(course => {
+        const matchesSearch = course.name.toLowerCase().includes(searchTerm);
+        const matchesSemester = semesterFilter === '' || course.semester.toString() === semesterFilter;
+        const matchesCategory = categoryFilter === '' || course.category === categoryFilter;
+        return matchesSearch && matchesSemester && matchesCategory;
+    });
+
+    // 2. Sort
+    filtered.sort((a, b) => {
+        if (sortBy === 'name') return a.name.localeCompare(b.name);
+        if (sortBy === 'grade') return b.grade - a.grade;
+        if (sortBy === 'credits') return b.credits - a.credits;
+        if (sortBy === 'semester') return a.semester - b.semester;
+        return 0;
+    });
+
+    // 3. Populate
+    populateCoursesTable(filtered);
 };
 
 window.sortCourses = () => {
-    populateCoursesTable();
+    window.filterCourses();
 };
 
+// Placeholders for unfinished features
 window.calculateWhatIf = () => {
-    showMessage('מחשבון "מה אם" בפיתוח', 'error');
+    alert('מחשבון "מה אם" בפיתוח');
 };
 
 window.addFutureCourse = () => {
-    showMessage('הוספת קורס עתידי בפיתוח', 'error');
-};
-
-window.calculateShield = () => {
-    const shieldGrade = parseFloat(document.getElementById('shieldGrade')?.value);
-    const shieldPercent = parseFloat(document.getElementById('shieldPercent')?.value);
-    const examGrade = document.getElementById('examGrade')?.value;
-    
-    const result = document.getElementById('shieldResult');
-    if (!result) return;
-    
-    if (!shieldGrade || !shieldPercent) {
-        result.textContent = 'אנא מלא את כל השדות';
-        result.classList.add('active');
-        result.style.display = 'block';
-        return;
-    }
-    
-    if (examGrade) {
-        const examPercent = 100 - shieldPercent;
-        const finalGrade = (shieldGrade * shieldPercent / 100) + (parseFloat(examGrade) * examPercent / 100);
-        result.innerHTML = `<h4>הציון הסופי שלך: ${finalGrade.toFixed(2)}</h4>`;
-    } else {
-        const examPercent = 100 - shieldPercent;
-        const requiredGrade = ((55 - (shieldGrade * shieldPercent / 100)) * 100) / examPercent;
-        result.innerHTML = `<h4>כדי לקבל ציון עובר (55), עליך לקבל ${requiredGrade.toFixed(2)} בבחינה</h4>`;
-    }
-    
-    result.classList.add('active');
-    result.style.display = 'block';
+    alert('הוספת קורס עתידי בפיתוח');
 };
 
 window.generatePDF = () => {
-    showMessage('יצירת PDF בפיתוח', 'error');
+    alert('יצירת PDF בפיתוח');
 };
 
 window.showSummary = () => {
-    showMessage('סיכום אקדמי בפיתוח', 'error');
+    alert('סיכום אקדמי בפיתוח');
 };
+
+// Show message
+function showMessage(message, type) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}`;
+    messageDiv.textContent = message;
+    messageDiv.style.cssText = `
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 1rem 2rem;
+        border-radius: 10px;
+        font-weight: 600;
+        z-index: 10001; /* Z-Index גבוה */
+        ${type === 'success' ? 'background: #10b981; color: white;' : 'background: #ef4444; color: white;'}
+    `;
+    document.body.appendChild(messageDiv);
+    setTimeout(() => messageDiv.remove(), 3000);
+}
 
 // Close dropdown when clicking outside
 document.addEventListener('click', (e) => {
@@ -604,10 +619,4 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Load saved theme
-const savedTheme = localStorage.getItem('theme') || 'light';
-document.documentElement.setAttribute('data-theme', savedTheme);
-const icon = document.querySelector('.theme-icon');
-if (icon) icon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-
-console.log('Dashboard script loaded successfully!');
+console.log('Dashboard.js loaded successfully!');
