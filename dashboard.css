@@ -18,13 +18,66 @@
     --shadow-lg: rgba(0, 0, 0, 0.2);
 }
 
+/* --- תיקון קריטי ללוגו ולניווט --- */
 .dashboard-nav {
     background: var(--light-bg);
     box-shadow: 0 2px 10px var(--shadow);
     position: sticky;
     top: 0;
     z-index: 1000;
+    width: 100%;
 }
+
+.nav-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0.75rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 70px; /* גובה קבוע לניווט */
+}
+
+.nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-decoration: none;
+}
+
+/* התיקון ללוגו הענק: */
+.logo-img {
+    height: 40px !important; /* מכריח את הלוגו להיות קטן */
+    width: auto;
+    object-fit: contain;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.nav-item {
+    text-decoration: none;
+    color: var(--text-light);
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-item:hover, .nav-item.active {
+    color: var(--primary);
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* --- סוף תיקון ניווט --- */
 
 .dashboard-main {
     max-width: 1400px;
@@ -235,7 +288,7 @@
     display: none;
     margin-top: 0.5rem;
     overflow: hidden;
-    z-index: 10000; /* הוגדל כדי להיות מעל אלמנטים אחרים */
+    z-index: 10000;
 }
 
 .user-dropdown.active {
@@ -299,19 +352,19 @@
     min-width: 200px;
 }
 
-/* --- תיקון חשוב למובייל כאן --- */
+/* טבלה רספונסיבית */
 .courses-table-container {
     background: var(--light-bg);
     border-radius: 16px;
     box-shadow: 0 4px 15px var(--shadow);
-    overflow-x: auto; /* מאפשר גלילה רוחבית */
-    -webkit-overflow-scrolling: touch; /* גלילה חלקה ב-iOS */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .courses-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 800px; /* מבטיח שהטבלה לא תתכווץ מדי */
+    min-width: 800px;
 }
 
 .courses-table thead {
@@ -323,7 +376,7 @@
 .courses-table td {
     padding: 1rem;
     text-align: right;
-    white-space: nowrap; /* מונע שבירת שורות לא רצויה */
+    white-space: nowrap;
 }
 
 .courses-table tbody tr {
@@ -440,6 +493,11 @@
 .btn-sm {
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    background-color: var(--primary);
+    color: white;
 }
 
 @media (max-width: 768px) {
@@ -456,5 +514,9 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
+    }
+
+    .nav-menu {
+        display: none; /* מחביא תפריט רגיל במובייל */
     }
 }
