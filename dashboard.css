@@ -218,7 +218,7 @@
 }
 
 .user-dropdown.active {
-    display: block;
+    display: block !important;
 }
 
 .user-dropdown a {
@@ -383,7 +383,7 @@
 }
 
 .modal.active {
-    display: flex;
+    display: flex !important;
 }
 
 .modal-content {
