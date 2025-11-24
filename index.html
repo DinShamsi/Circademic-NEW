@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circademic - מערכת ניהול אקדמי חכמה</title>
+    <link rel="icon" type="image/png" href="Favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="LOGO.png" alt="Circademic Logo" class="logo-img">
+                <span class="logo-text">Circademic</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features">יכולות</a>
+                <a href="#about">אודות</a>
+                <a href="blog.html">בלוג</a>
+                <a href="#contact">צור קשר</a>
+                <a href="login.html" class="btn-primary">התחבר</a>
+            </div>
+            <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    <span class="title-accent">נהל את</span>
+                    <span class="title-main">הקריירה האקדמית שלך</span>
+                    <span class="title-sub">בקלות ובפשטות</span>
+                </h1>
+                <p class="hero-description">
+                    מערכת ניהול אקדמי חכמה שעוזרת לך לעקוב אחר הציונים, לחשב ממוצעים,
+                    לתכנן את העתיד ולהגיע ליעדים שלך - הכל במקום אחד
+                </p>
+                <div class="hero-cta">
+                    <a href="login.html" class="btn-hero">התחל עכשיו בחינם</a>
+                    <a href="#features" class="btn-secondary">גלה עוד</a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">10K+</div>
+                        <div class="stat-label">סטודנטים פעילים</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">50K+</div>
+                        <div class="stat-label">קורסים מנוהלים</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">99.9%</div>
+                        <div class="stat-label">שביעות רצון</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">יכולות מתקדמות</h2>
+            <p class="section-subtitle">כל מה שאתה צריך כדי לנהל את הלימודים שלך בצורה המושלמת</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>ממוצע משוקלל חכם</h3>
+                    <p>חישוב אוטומטי של הממוצע המשוקלל שלך לפי סמסטרים, קטגוריות ומועדים</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>מעקב אחר יעדים</h3>
+                    <p>הגדר יעדי ממוצע וראה את ההתקדמות שלך לקראת המטרה</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔮</div>
+                    <h3>מחשבון "מה אם"</h3>
+                    <p>דמה תרחישים עתידיים וראה איך ציונים משפיעים על הממוצע שלך</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>מחשבון ציון מגן</h3>
+                    <p>חשב כמה צריך לקבל בבחינה כדי לעבור או להגיע למטרה</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📈</div>
+                    <h3>גרפים מתקדמים</h3>
+                    <p>ויזואליזציות מתקדמות של ההתקדמות שלך לאורך התואר</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📄</div>
+                    <h3>דוחות PDF מקצועיים</h3>
+                    <p>ייצא דוחות מפורטים למלגות, עבודה או צרכים אקדמיים</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">☁️</div>
+                    <h3>שמירה בענן</h3>
+                    <p>כל הנתונים שלך נשמרים בענן ומסונכרנים בין כל המכשירים</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🌙</div>
+                    <h3>מצב כהה</h3>
+                    <p>עבור בין מצב בהיר לכהה בהתאם להעדפה שלך</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">איך זה עובד?</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>הירשם בחינם</h3>
+                    <p>צור חשבון תוך שניות עם אימייל או חשבון Google</p>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>הזן קורסים</h3>
+                    <p>הוסף את הקורסים שלך ידנית או ייבא מקובץ CSV</p>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>עקוב אחר ההתקדמות</h3>
+                    <p>צפה בגרפים, מחשבונים ודוחות מפורטים</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <h2 class="section-title">למה Circademic?</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <p>
+                        <strong>Circademic</strong> נוצרה מתוך הבנה שסטודנטים זקוקים לכלי פשוט ואפקטיבי
+                        לניהול הקריירה האקדמית שלהם. אנחנו מספקים פלטפורמה מקיפה שמאפשרת לך:
+                    </p>
+                    <ul class="about-list">
+                        <li>לעקוב אחר כל הקורסים והציונים שלך במקום אחד</li>
+                        <li>לחשב ממוצעים משוקללים בצורה מדויקת ואוטומטית</li>
+                        <li>לתכנן את העתיד עם מחשבונים חכמים</li>
+                        <li>לקבל תובנות על ההתקדמות שלך בתואר</li>
+                        <li>לייצא דוחות מקצועיים למלגות ועבודה</li>
+                    </ul>
+                    <p>
+                        המערכת שלנו מתאימה לכל מוסדות ההשכלה הגבוהה בישראל ותומכת
+                        בכל סוגי התוכניות והמגמות.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2 class="section-title">צור קשר</h2>
+            <p class="section-subtitle">יש לך שאלות? נשמח לעזור!</p>
+            
+            <div class="contact-content">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <span class="contact-icon">📧</span>
+                        <div>
+                            <h4>אימייל</h4>
+                            <a href="mailto:Circademic1@gmail.com">Circademic1@gmail.com</a>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">🌐</span>
+                        <div>
+                            <h4>אתר</h4>
+                            <a href="https://circademic.com">circademic.com</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <form class="contact-form" id="contactForm">
+                    <input type="text" placeholder="שם מלא" required>
+                    <input type="email" placeholder="אימייל" required>
+                    <textarea placeholder="הודעה" rows="5" required></textarea>
+                    <button type="submit" class="btn-primary">שלח הודעה</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <img src="LOGO.png" alt="Circademic" class="footer-logo">
+                    <p>מערכת ניהול אקדמי חכמה לסטודנטים</p>
+                </div>
+                <div class="footer-section">
+                    <h4>קישורים מהירים</h4>
+                    <ul>
+                        <li><a href="#features">יכולות</a></li>
+                        <li><a href="#about">אודות</a></li>
+                        <li><a href="blog.html">בלוג</a></li>
+                        <li><a href="login.html">התחבר</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>יצירת קשר</h4>
+                    <ul>
+                        <li><a href="mailto:Circademic1@gmail.com">Circademic1@gmail.com</a></li>
+                        <li><a href="https://circademic.com">circademic.com</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Circademic. כל הזכויות שמורות.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="landing.js"></script>
+</body>
+</html>

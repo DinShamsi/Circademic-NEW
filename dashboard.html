@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>דאשבורד - Circademic</title>
+    <link rel="icon" type="image/png" href="Favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="dashboard-nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="LOGO.png" alt="Circademic" class="logo-img">
+                <span class="logo-text">Circademic</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#overview" class="nav-item active">סקירה</a>
+                <a href="#courses" class="nav-item">קורסים</a>
+                <a href="#calculators" class="nav-item">מחשבונים</a>
+                <a href="#reports" class="nav-item">דוחות</a>
+                <a href="blog.html" class="nav-item">בלוג</a>
+            </div>
+            <div class="nav-actions">
+                <button class="theme-toggle" onclick="toggleTheme()" title="מצב כהה/בהיר">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <div class="user-menu">
+                    <button class="user-button" onclick="toggleUserMenu()">
+                        <div class="user-avatar" id="userAvatar">S</div>
+                        <span class="user-name" id="userName">סטודנט</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="#" onclick="showProfile()">פרופיל</a>
+                        <a href="#" onclick="showSettings()">הגדרות</a>
+                        <a href="#" onclick="logout()">התנתק</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <!-- Overview Section -->
+        <section id="overview" class="dashboard-section">
+            <div class="welcome-banner">
+                <h1>שלום, <span id="welcomeName">סטודנט</span>!</h1>
+                <p>הנה סיכום ההתקדמות האקדמית שלך</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-label">ממוצע כללי</div>
+                        <div class="stat-value" id="overallAverage">0.00</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📚</div>
+                    <div class="stat-content">
+                        <div class="stat-label">נ"ז שנצברו</div>
+                        <div class="stat-value" id="totalCredits">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-content">
+                        <div class="stat-label">התקדמות בתואר</div>
+                        <div class="stat-value" id="degreeProgress">0%</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-content">
+                        <div class="stat-label">ציון שיא</div>
+                        <div class="stat-value" id="highestGrade">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-card">
+                <h3>התקדמות לקראת סיום התואר</h3>
+                <div class="progress-info">
+                    <span id="creditsEarned">0</span> מתוך <span id="creditsRequired">120</span> נ"ז
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <div class="progress-details">
+                    <span>שנה <span id="currentYear">א'</span></span>
+                    <span>סמסטר <span id="currentSemester">1</span></span>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>מגמת ציונים לפי סמסטרים</h3>
+                    <canvas id="semesterChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>התפלגות מועדים</h3>
+                    <canvas id="examTypeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Category Stats -->
+            <div class="category-stats">
+                <h3>ממוצעים לפי קטגוריות</h3>
+                <div class="category-grid" id="categoryGrid">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Courses Section -->
+        <section id="courses" class="dashboard-section" style="display: none;">
+            <div class="section-header">
+                <h2>ניהול קורסים</h2>
+                <div class="section-actions">
+                    <button class="btn-primary" onclick="showAddCourse()">+ הוסף קורס</button>
+                    <button class="btn-secondary" onclick="showImportCSV()">📁 ייבא CSV</button>
+                    <button class="btn-secondary" onclick="exportCSV()">⬇️ ייצא CSV</button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-bar">
+                <input type="text" id="searchCourses" placeholder="חפש קורס..." onkeyup="filterCourses()">
+                <select id="filterSemester" onchange="filterCourses()">
+                    <option value="">כל הסמסטרים</option>
+                </select>
+                <select id="filterCategory" onchange="filterCourses()">
+                    <option value="">כל הקטגוריות</option>
+                </select>
+                <select id="sortBy" onchange="sortCourses()">
+                    <option value="name">שם</option>
+                    <option value="grade">ציון</option>
+                    <option value="credits">נ"ז</option>
+                    <option value="semester">סמסטר</option>
+                </select>
+            </div>
+
+            <!-- Courses Table -->
+            <div class="courses-table-container">
+                <table class="courses-table" id="coursesTable">
+                    <thead>
+                        <tr>
+                            <th>שם הקורס</th>
+                            <th>נ"ז</th>
+                            <th>ציון</th>
+                            <th>סמסטר</th>
+                            <th>קטגוריה</th>
+                            <th>מועד</th>
+                            <th>פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coursesTableBody">
+                        <!-- Will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Calculators Section -->
+        <section id="calculators" class="dashboard-section" style="display: none;">
+            <h2>מחשבונים</h2>
+            
+            <div class="calculators-grid">
+                <!-- What-If Calculator -->
+                <div class="calculator-card">
+                    <h3>🔮 מחשבון "מה אם"</h3>
+                    <p>דמה תרחישים עתידיים וראה איך ציונים משפיעים על הממוצע</p>
+                    <div class="calculator-content">
+                        <h4>קורסים עתידיים</h4>
+                        <div id="futureCoursesContainer"></div>
+                        <button class="btn-secondary btn-sm" onclick="addFutureCourse()">+ הוסף קורס</button>
+                        
+                        <h4>שיפור קורסים קיימים</h4>
+                        <div id="improveCourses Container"></div>
+                        
+                        <button class="btn-primary" onclick="calculateWhatIf()">חשב</button>
+                        <div class="calculator-result" id="whatIfResult"></div>
+                    </div>
+                </div>
+
+                <!-- Shield Calculator -->
+                <div class="calculator-card">
+                    <h3>🛡️ מחשבון ציון מגן</h3>
+                    <p>חשב כמה צריך בבחינה כדי לעבור או להגיע למטרה</p>
+                    <div class="calculator-content">
+                        <div class="form-group">
+                            <label>ציון מגן</label>
+                            <input type="number" id="shieldGrade" min="0" max="100" placeholder="0-100">
+                        </div>
+                        <div class="form-group">
+                            <label>אחוז מגן (%)</label>
+                            <input type="number" id="shieldPercent" min="0" max="100" placeholder="0-100">
+                        </div>
+                        <div class="form-group">
+                            <label>ציון בחינה (אופציונלי)</label>
+                            <input type="number" id="examGrade" min="0" max="100" placeholder="0-100">
+                        </div>
+                        <button class="btn-primary" onclick="calculateShield()">חשב</button>
+                        <div class="calculator-result" id="shieldResult"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reports Section -->
+        <section id="reports" class="dashboard-section" style="display: none;">
+            <h2>דוחות וייצוא</h2>
+            
+            <div class="reports-grid">
+                <div class="report-card">
+                    <div class="report-icon">📄</div>
+                    <h3>דוח PDF מקצועי</h3>
+                    <p>ייצא דוח מפורט עם כל הנתונים והגרפים</p>
+                    <button class="btn-primary" onclick="generatePDF()">הורד PDF</button>
+                </div>
+                <div class="report-card">
+                    <div class="report-icon">📊</div>
+                    <h3>ייצוא CSV</h3>
+                    <p>ייצא את כל הקורסים לקובץ CSV</p>
+                    <button class="btn-primary" onclick="exportCSV()">הורד CSV</button>
+                </div>
+                <div class="report-card">
+                    <div class="report-icon">📈</div>
+                    <h3>סיכום אקדמי</h3>
+                    <p>צפה בסיכום מפורט של ההתקדמות שלך</p>
+                    <button class="btn-primary" onclick="showSummary()">צפה בסיכום</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <div id="addCourseModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addCourseModal')">&times;</span>
+            <h2>הוסף קורס חדש</h2>
+            <form id="addCourseForm">
+                <div class="form-group">
+                    <label>שם הקורס</label>
+                    <input type="text" id="courseName" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>נ"ז</label>
+                        <input type="number" id="courseCredits" step="0.5" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>ציון</label>
+                        <input type="number" id="courseGrade" min="0" max="100" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>סמסטר</label>
+                        <input type="number" id="courseSemester" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>קטגוריה</label>
+                        <select id="courseCategory" required></select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>מועד</label>
+                        <select id="courseExamType" required>
+                            <option value="מועד א'">מועד א'</option>
+                            <option value="מועד ב'">מועד ב'</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>סוג ציון</label>
+                        <select id="courseGradeType" required>
+                            <option value="רגיל">רגיל</option>
+                            <option value="בינארי">בינארי (עבר/לא עבר)</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">שמור קורס</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="dashboard.js"></script>
+</body>
+</html>
